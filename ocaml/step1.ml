@@ -18,11 +18,15 @@ let parse_with_error lexbuf =
     fprintf stderr "%a: syntax error\n" print_position lexbuf;
     exit (-1)
 
+let eval ast = ast
+
+let print = Lisp.print_ast
+         
 (* Parse the value and print its output *)
 let rec parse_and_print lexbuf =
   match parse_with_error lexbuf with
   | Some value ->
-    Lisp.print_ast value;
+    value |> eval |> print;
     parse_and_print lexbuf
   | None -> ()
 
@@ -33,40 +37,29 @@ let loop filename () =
   parse_and_print lexbuf;
   In_channel.close inx
 
-(* repl support *)
-let get_inchan = function
-  | None | Some "-" ->
-    ("stdin", In_channel.stdin)
-  | Some filename ->
-    (filename, In_channel.create filename)
-                   
-let read filename =
-  let (chname, ch) = get_inchan filename in
-  let lexbuf = Lexing.from_channel ch in
-  lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = chname };
-  match parse_with_error lexbuf with
-  | Some value -> value
-  | None -> exit (-1)
+let read inc =
+  let lexbuf = Lexing.from_channel inc in
+  lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = "stdin" };
+  parse_with_error lexbuf
 
-let eval ast = ast
 
-let print = Lisp.print_ast
-
-let rep ch = ch |> read |> eval |> print
-  
 let rec repl () =
   Out_channel.output_string stdout "user> ";
   Out_channel.flush stdout;
-  match In_channel.input_line stdin with
+  match read stdin with
   | None -> ()
-  | Some line ->
-     Out_channel.output_lines stdout [(rep line)];
-     Out_channel.flush stdout;
+  | Some value ->
+     value |> eval |> print;
      repl ()
-                   
+
+let main filename () =
+  match filename with
+  | Some filename -> loop filename ()
+  | None -> repl ()
+
 (* The main routine *)
 let () =
   Command.basic ~summary:"Parse and display JSON"
-    Command.Spec.(empty +> anon ("filename" %: file))
-    loop 
+    Command.Spec.(empty +> anon (maybe ("filename" %: file)))
+    main 
   |> Command.run
