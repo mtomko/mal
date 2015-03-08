@@ -33,6 +33,37 @@ let loop filename () =
   parse_and_print lexbuf;
   In_channel.close inx
 
+(* repl support *)
+let get_inchan = function
+  | None | Some "-" ->
+    ("stdin", In_channel.stdin)
+  | Some filename ->
+    (filename, In_channel.create filename)
+                   
+let read filename =
+  let (chname, ch) = get_inchan filename in
+  let lexbuf = Lexing.from_channel ch in
+  lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = chname };
+  match parse_with_error lexbuf with
+  | Some value -> value
+  | None -> exit (-1)
+
+let eval ast = ast
+
+let print = Lisp.print_ast
+
+let rep ch = ch |> read |> eval |> print
+  
+let rec repl () =
+  Out_channel.output_string stdout "user> ";
+  Out_channel.flush stdout;
+  match In_channel.input_line stdin with
+  | None -> ()
+  | Some line ->
+     Out_channel.output_lines stdout [(rep line)];
+     Out_channel.flush stdout;
+     repl ()
+                   
 (* The main routine *)
 let () =
   Command.basic ~summary:"Parse and display JSON"
