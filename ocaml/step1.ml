@@ -22,44 +22,42 @@ let eval ast = ast
 
 let print = Lisp.print_ast
          
-(* Parse the value and print its output *)
-let rec parse_and_print lexbuf =
-  match parse_with_error lexbuf with
-  | Some value ->
-    value |> eval |> print;
-    parse_and_print lexbuf
-  | None -> ()
-
-let loop filename () =
+let lexbuf_from_stdin =
+  let lexbuf = Lexing.from_channel stdin in
+  lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = "stdin" };
+  lexbuf
+                   
+let lexbuf_from_file filename =
   let inx = In_channel.create filename in
   let lexbuf = Lexing.from_channel inx in
   lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = filename };
-  parse_and_print lexbuf;
-  In_channel.close inx
-
-let read inc =
-  let lexbuf = Lexing.from_channel inc in
-  lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = "stdin" };
-  parse_with_error lexbuf
-
-
-let rec repl () =
-  Out_channel.output_string stdout "user> ";
-  Out_channel.flush stdout;
-  match read stdin with
+  (inx, lexbuf)
+                    
+(* Parse the value and print its output *)
+let rec interpret ?prompt lexbuf =
+  (match prompt with
+   | Some p -> Out_channel.output_string stdout p;
+               Out_channel.flush stdout;
+   | None -> ());
+  match parse_with_error lexbuf with
   | None -> ()
   | Some value ->
-     value |> eval |> print;
-     repl ()
-
+    value |> eval |> print;
+    interpret lexbuf ?prompt
+                   
 let main filename () =
   match filename with
-  | Some filename -> loop filename ()
-  | None -> repl ()
+  | Some filename ->
+     let (inc, lexbuf) = lexbuf_from_file filename in
+     interpret lexbuf;
+     In_channel.close inc
+  | None ->
+     let lexbuf = lexbuf_from_stdin in
+     interpret lexbuf ~prompt:"user> "
 
 (* The main routine *)
 let () =
-  Command.basic ~summary:"Parse and display JSON"
+  Command.basic ~summary:"Parse and display Lisp"
     Command.Spec.(empty +> anon (maybe ("filename" %: file)))
     main 
   |> Command.run
