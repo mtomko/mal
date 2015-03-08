@@ -2,11 +2,13 @@ open Core.Std
 open Lexer
 open Lexing
 
+(* Print a location in the parse tree *)       
 let print_position outx lexbuf =
   let pos = lexbuf.lex_curr_p in
   fprintf outx "%s:%d:%d" pos.pos_fname
     pos.pos_lnum (pos.pos_cnum - pos.pos_bol + 1)
 
+(* Parse the buffer and handle syntax errors *)
 let parse_with_error lexbuf =
   try Parser.prog Lexer.read lexbuf with
   | SyntaxError msg ->
@@ -16,7 +18,7 @@ let parse_with_error lexbuf =
     fprintf stderr "%a: syntax error\n" print_position lexbuf;
     exit (-1)
 
-(* part 1 *)
+(* Parse the value and print its output *)
 let rec parse_and_print lexbuf =
   match parse_with_error lexbuf with
   | Some value ->
@@ -31,7 +33,7 @@ let loop filename () =
   parse_and_print lexbuf;
   In_channel.close inx
 
-(* part 2 *)
+(* The main routine *)
 let () =
   Command.basic ~summary:"Parse and display JSON"
     Command.Spec.(empty +> anon ("filename" %: file))
