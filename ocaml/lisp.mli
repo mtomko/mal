@@ -5,6 +5,7 @@ module Ast : sig
   type t =
     [ `Bool of bool
     | `Int of int
+    | `Float of float
     | `List of t list
     | `Nil
     | `String of string

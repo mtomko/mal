@@ -5,6 +5,7 @@ module Ast = struct
     | `List of t list
     | `Nil
     | `Int of int
+    | `Float of float
     | `Symbol of string
     | `String of string
     | `Bool of bool
@@ -18,6 +19,7 @@ let rec ast_to_string a =
                 String.concat ["("; subtree_strs; ")"]
   | `Nil -> "nil"
   | `Int i -> Int.to_string i
+  | `Float f -> Float.to_string f
   | `Symbol s -> s
   | `String s -> String.concat ["\""; s; "\""]
   | `Bool false -> "false"
