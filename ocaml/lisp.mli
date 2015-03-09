@@ -1,8 +1,11 @@
+open Lexing
+
 (** Lisp abstract syntax tree definition *)
 module Ast : sig
   type t =
     [ `Bool of bool
     | `Int of int
+    | `Float of float
     | `List of t list
     | `Nil
     | `String of string
@@ -14,3 +17,4 @@ val ast_to_string : Ast.t -> string
 
 (** Prints an AST *)                             
 val print_ast : Ast.t -> unit
+
