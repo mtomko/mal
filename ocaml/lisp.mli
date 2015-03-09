@@ -1,3 +1,5 @@
+open Lexing
+
 (** Lisp abstract syntax tree definition *)
 module Ast : sig
   type t =
@@ -14,3 +16,4 @@ val ast_to_string : Ast.t -> string
 
 (** Prints an AST *)                             
 val print_ast : Ast.t -> unit
+
